@@ -24,6 +24,10 @@ interface Licitacao {
   data_abertura: string;
   situacao: string;
   objeto: string;
+  link_pncp?: string;
+  cnpj?: string;
+  ano_compra?: number;
+  sequencial_compra?: number;
 }
 
 // Mapa de modalidades do PNCP
@@ -109,16 +113,32 @@ serve(async (req) => {
 
         // Processar os dados
         if (data && data.data && Array.isArray(data.data)) {
-          const licitacoes = data.data.map((item: any) => ({
-            id: item.numeroControlePNCP || item.numeroCompra || `${Math.random()}`,
-            titulo: (item.objetoCompra || 'Sem título').substring(0, 150),
-            orgao: item.orgaoEntidade?.razaoSocial || item.nomeOrgao || 'Órgão não informado',
-            modalidade: item.modalidadeNome || 'Não especificada',
-            valor_estimado: parseFloat(item.valorTotalEstimado || item.valorEstimadoTotal || 0),
-            data_abertura: item.dataPublicacaoPncp || item.dataAberturaPropostas || new Date().toISOString(),
-            situacao: item.situacaoCompraNome || 'EM ANDAMENTO',
-            objeto: item.objetoCompra || 'Descrição não disponível',
-          }));
+          const licitacoes = data.data.map((item: any) => {
+            const cnpj = item.orgaoEntidade?.cnpj || '';
+            const anoCompra = item.anoCompra;
+            const sequencialCompra = item.sequencialCompra;
+            
+            // Construir link do PNCP se temos os dados necessários
+            let linkPncp = '';
+            if (cnpj && anoCompra && sequencialCompra) {
+              linkPncp = `https://pncp.gov.br/app/editais/${anoCompra}/${cnpj}/${sequencialCompra}`;
+            }
+            
+            return {
+              id: item.numeroControlePNCP || item.numeroCompra || `${Math.random()}`,
+              titulo: (item.objetoCompra || 'Sem título').substring(0, 150),
+              orgao: item.orgaoEntidade?.razaoSocial || item.nomeOrgao || 'Órgão não informado',
+              modalidade: item.modalidadeNome || 'Não especificada',
+              valor_estimado: parseFloat(item.valorTotalEstimado || item.valorEstimadoTotal || 0),
+              data_abertura: item.dataPublicacaoPncp || item.dataAberturaPropostas || new Date().toISOString(),
+              situacao: item.situacaoCompraNome || 'EM ANDAMENTO',
+              objeto: item.objetoCompra || 'Descrição não disponível',
+              link_pncp: linkPncp || undefined,
+              cnpj: cnpj || undefined,
+              ano_compra: anoCompra || undefined,
+              sequencial_compra: sequencialCompra || undefined,
+            };
+          });
           
           todasLicitacoes = [...todasLicitacoes, ...licitacoes];
         }

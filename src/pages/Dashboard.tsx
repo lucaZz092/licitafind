@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2 } from "lucide-react";
+import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2, ExternalLink } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SavedFilters } from "@/components/SavedFilters";
 
@@ -19,6 +19,10 @@ interface Licitacao {
   data_abertura: string;
   situacao: string;
   objeto: string;
+  link_pncp?: string;
+  cnpj?: string;
+  ano_compra?: number;
+  sequencial_compra?: number;
 }
 
 const Dashboard = () => {
@@ -328,6 +332,18 @@ const Dashboard = () => {
                       <span>{formatDate(licitacao.data_abertura)}</span>
                     </div>
                   </div>
+                  {licitacao.link_pncp && (
+                    <div className="pt-3 border-t">
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => window.open(licitacao.link_pncp, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Ver detalhes no PNCP
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
