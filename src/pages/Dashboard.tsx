@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2, ExternalLink } from "lucide-react";
+import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2, ExternalLink, Copy } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SavedFilters } from "@/components/SavedFilters";
 
@@ -333,41 +333,52 @@ const Dashboard = () => {
                       <span>{formatDate(licitacao.data_abertura)}</span>
                     </div>
                   </div>
-                  <div className="pt-3 border-t">
-                    {licitacao.link_pncp ? (
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="default" 
-                          className="flex-1"
-                          onClick={() => window.open(licitacao.link_pncp, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Abrir Edital no PNCP
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          onClick={() => {
-                            const searchUrl = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(licitacao.titulo)}`;
-                            window.open(searchUrl, '_blank');
-                          }}
-                          title="Buscar pelo título"
-                        >
-                          <Search className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
+                  <div className="pt-3 border-t space-y-2">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {licitacao.cnpj && (
+                        <div>
+                          <span className="font-medium">CNPJ:</span> {licitacao.cnpj}
+                        </div>
+                      )}
+                      {licitacao.ano_compra && licitacao.sequencial_compra && (
+                        <div>
+                          <span className="font-medium">Número:</span> {licitacao.sequencial_compra}/{licitacao.ano_compra}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
                       <Button 
-                        variant="outline" 
-                        className="w-full"
+                        variant="default" 
+                        className="flex-1"
                         onClick={() => {
-                          const searchUrl = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(licitacao.orgao + ' ' + licitacao.titulo)}`;
+                          // Busca pelo título e órgão no PNCP
+                          const termo = `${licitacao.orgao} ${licitacao.sequencial_compra}`;
+                          const searchUrl = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(termo)}`;
                           window.open(searchUrl, '_blank');
                         }}
                       >
                         <Search className="h-4 w-4 mr-2" />
                         Buscar no PNCP
                       </Button>
-                    )}
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          // Copia informações para a área de transferência
+                          const info = `Órgão: ${licitacao.orgao}\nNúmero: ${licitacao.sequencial_compra}/${licitacao.ano_compra}\nCNPJ: ${licitacao.cnpj || 'N/A'}`;
+                          navigator.clipboard.writeText(info);
+                          toast({
+                            title: "Copiado!",
+                            description: "Informações copiadas para a área de transferência",
+                          });
+                        }}
+                        title="Copiar informações"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      💡 O PNCP exige verificação manual. Use a busca para encontrar o edital.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
