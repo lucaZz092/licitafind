@@ -6,9 +6,13 @@ const corsHeaders = {
 };
 
 interface SearchRequest {
-  searchTerm: string;
+  searchTerm?: string;
   modalidade?: string;
+  estado?: string;
   valorMin?: number;
+  valorMax?: number;
+  dataInicial?: string;
+  dataFinal?: string;
 }
 
 interface Licitacao {
@@ -37,16 +41,28 @@ serve(async (req) => {
   }
 
   try {
-    const { searchTerm, modalidade, valorMin }: SearchRequest = await req.json();
+    const { searchTerm, modalidade, estado, valorMin, valorMax, dataInicial: dataInicialParam, dataFinal: dataFinalParam }: SearchRequest = await req.json();
     
-    console.log('Buscando licitações com:', { searchTerm, modalidade, valorMin });
+    console.log('Buscando licitações com:', { searchTerm, modalidade, estado, valorMin, valorMax, dataInicial: dataInicialParam, dataFinal: dataFinalParam });
 
     // API oficial do PNCP (Portal Nacional de Contratações Públicas)
     const baseUrl = 'https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao';
     
-    // Data inicial (últimos 30 dias) - formato YYYYMMDD (sem hífens)
-    const dataInicialDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const dataFinalDate = new Date();
+    // Datas para a busca - usar parâmetros do usuário ou padrão (últimos 30 dias)
+    let dataInicialDate: Date;
+    let dataFinalDate: Date;
+    
+    if (dataInicialParam) {
+      dataInicialDate = new Date(dataInicialParam);
+    } else {
+      dataInicialDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    if (dataFinalParam) {
+      dataFinalDate = new Date(dataFinalParam);
+    } else {
+      dataFinalDate = new Date();
+    }
     
     const dataInicial = `${dataInicialDate.getFullYear()}${String(dataInicialDate.getMonth() + 1).padStart(2, '0')}${String(dataInicialDate.getDate()).padStart(2, '0')}`;
     const dataFinal = `${dataFinalDate.getFullYear()}${String(dataFinalDate.getMonth() + 1).padStart(2, '0')}${String(dataFinalDate.getDate()).padStart(2, '0')}`;
@@ -115,22 +131,33 @@ serve(async (req) => {
     
     // Aplicar filtros de busca
     let licitacoesFiltradas = todasLicitacoes.filter((item) => {
-      // Se não tem termo de busca, retorna tudo
-      if (!searchTerm) return true;
+      // Filtrar por termo de busca (se fornecido)
+      if (searchTerm) {
+        const termo = searchTerm.toLowerCase();
+        const matchesSearch = 
+          item.objeto.toLowerCase().includes(termo) ||
+          item.titulo.toLowerCase().includes(termo) ||
+          item.orgao.toLowerCase().includes(termo);
+        
+        if (!matchesSearch) return false;
+      }
       
-      // Filtrar por termo de busca
-      const termo = searchTerm.toLowerCase();
-      const matchesSearch = 
-        item.objeto.toLowerCase().includes(termo) ||
-        item.titulo.toLowerCase().includes(termo) ||
-        item.orgao.toLowerCase().includes(termo);
+      // Filtrar por estado (se fornecido)
+      if (estado) {
+        const matchesEstado = item.orgao.toLowerCase().includes(estado.toLowerCase());
+        if (!matchesEstado) return false;
+      }
       
-      return matchesSearch;
+      return true;
     });
     
-    // Aplicar filtro de valor mínimo separadamente
+    // Aplicar filtros de valor
     if (valorMin && valorMin > 0) {
       licitacoesFiltradas = licitacoesFiltradas.filter(item => item.valor_estimado >= valorMin);
+    }
+    
+    if (valorMax && valorMax > 0) {
+      licitacoesFiltradas = licitacoesFiltradas.filter(item => item.valor_estimado <= valorMax);
     }
     
     // Limitar a 50 resultados

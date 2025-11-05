@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SavedFilters } from "@/components/SavedFilters";
 
 interface Licitacao {
   id: string;
@@ -28,7 +29,11 @@ const Dashboard = () => {
   const [licitacoes, setLicitacoes] = useState<Licitacao[]>([]);
   const [userName, setUserName] = useState("");
   const [modalidadeFilter, setModalidadeFilter] = useState("all");
-  const [valorFilter, setValorFilter] = useState("all");
+  const [estadoFilter, setEstadoFilter] = useState("all");
+  const [valorMin, setValorMin] = useState("");
+  const [valorMax, setValorMax] = useState("");
+  const [dataInicial, setDataInicial] = useState("");
+  const [dataFinal, setDataFinal] = useState("");
 
   useEffect(() => {
     checkUser();
@@ -58,22 +63,17 @@ const Dashboard = () => {
   };
 
   const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      toast({
-        title: "Digite algo para buscar",
-        description: "Informe palavras-chave para a pesquisa",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("search-licitacoes", {
         body: { 
-          searchTerm,
+          searchTerm: searchTerm || undefined,
           modalidade: modalidadeFilter === "all" ? undefined : modalidadeFilter,
-          valorMin: valorFilter === "all" ? undefined : getValorMin(valorFilter),
+          estado: estadoFilter === "all" ? undefined : estadoFilter,
+          valorMin: valorMin ? parseFloat(valorMin) : undefined,
+          valorMax: valorMax ? parseFloat(valorMax) : undefined,
+          dataInicial: dataInicial || undefined,
+          dataFinal: dataFinal || undefined,
         },
       });
 
@@ -84,7 +84,7 @@ const Dashboard = () => {
       if (!data?.licitacoes || data.licitacoes.length === 0) {
         toast({
           title: "Nenhum resultado",
-          description: "Tente outros termos de busca",
+          description: "Tente ajustar os filtros",
         });
       }
     } catch (error: any) {
@@ -98,13 +98,19 @@ const Dashboard = () => {
     }
   };
 
-  const getValorMin = (filter: string): number | undefined => {
-    switch (filter) {
-      case "low": return 0;
-      case "medium": return 100000;
-      case "high": return 1000000;
-      default: return undefined;
-    }
+  const handleLoadFilter = (filter: any) => {
+    setSearchTerm(filter.search_term || "");
+    setModalidadeFilter(filter.modalidade || "all");
+    setEstadoFilter(filter.estado || "all");
+    setValorMin(filter.valor_min?.toString() || "");
+    setValorMax(filter.valor_max?.toString() || "");
+    setDataInicial(filter.data_inicial || "");
+    setDataFinal(filter.data_final || "");
+    
+    toast({
+      title: "Filtro carregado",
+      description: `"${filter.name}" foi aplicado`,
+    });
   };
 
   const formatCurrency = (value: number) => {
@@ -137,6 +143,19 @@ const Dashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
+        <SavedFilters 
+          onLoadFilter={handleLoadFilter}
+          currentFilters={{
+            searchTerm,
+            modalidade: modalidadeFilter,
+            estado: estadoFilter,
+            valorMin,
+            valorMax,
+            dataInicial,
+            dataFinal,
+          }}
+        />
+
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -144,13 +163,13 @@ const Dashboard = () => {
               Buscar Licitações
             </CardTitle>
             <CardDescription>
-              Pesquise licitações em todo o Brasil usando dados oficiais do PNCP
+              Pesquise licitações em todo o Brasil usando dados oficiais do PNCP (palavra-chave opcional)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
               <Input
-                placeholder="Digite palavras-chave (ex: equipamentos hospitalares, construção)"
+                placeholder="Palavras-chave (opcional)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -166,8 +185,8 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            <div className="flex gap-4 flex-wrap">
-              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
                 <Select value={modalidadeFilter} onValueChange={setModalidadeFilter}>
                   <SelectTrigger>
@@ -183,19 +202,87 @@ const Dashboard = () => {
                 </Select>
               </div>
 
-              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <Select value={valorFilter} onValueChange={setValorFilter}>
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <Select value={estadoFilter} onValueChange={setEstadoFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Valor estimado" />
+                    <SelectValue placeholder="Estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos os valores</SelectItem>
-                    <SelectItem value="low">Até R$ 100 mil</SelectItem>
-                    <SelectItem value="medium">R$ 100 mil - R$ 1 milhão</SelectItem>
-                    <SelectItem value="high">Acima de R$ 1 milhão</SelectItem>
+                    <SelectItem value="all">Todos os estados</SelectItem>
+                    <SelectItem value="AC">Acre</SelectItem>
+                    <SelectItem value="AL">Alagoas</SelectItem>
+                    <SelectItem value="AP">Amapá</SelectItem>
+                    <SelectItem value="AM">Amazonas</SelectItem>
+                    <SelectItem value="BA">Bahia</SelectItem>
+                    <SelectItem value="CE">Ceará</SelectItem>
+                    <SelectItem value="DF">Distrito Federal</SelectItem>
+                    <SelectItem value="ES">Espírito Santo</SelectItem>
+                    <SelectItem value="GO">Goiás</SelectItem>
+                    <SelectItem value="MA">Maranhão</SelectItem>
+                    <SelectItem value="MT">Mato Grosso</SelectItem>
+                    <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
+                    <SelectItem value="MG">Minas Gerais</SelectItem>
+                    <SelectItem value="PA">Pará</SelectItem>
+                    <SelectItem value="PB">Paraíba</SelectItem>
+                    <SelectItem value="PR">Paraná</SelectItem>
+                    <SelectItem value="PE">Pernambuco</SelectItem>
+                    <SelectItem value="PI">Piauí</SelectItem>
+                    <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+                    <SelectItem value="RN">Rio Grande do Norte</SelectItem>
+                    <SelectItem value="RS">Rio Grande do Sul</SelectItem>
+                    <SelectItem value="RO">Rondônia</SelectItem>
+                    <SelectItem value="RR">Roraima</SelectItem>
+                    <SelectItem value="SC">Santa Catarina</SelectItem>
+                    <SelectItem value="SP">São Paulo</SelectItem>
+                    <SelectItem value="SE">Sergipe</SelectItem>
+                    <SelectItem value="TO">Tocantins</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  placeholder="Valor mínimo"
+                  value={valorMin}
+                  onChange={(e) => setValorMin(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  placeholder="Valor máximo"
+                  value={valorMax}
+                  onChange={(e) => setValorMax(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="date"
+                  placeholder="Data inicial"
+                  value={dataInicial}
+                  onChange={(e) => setDataInicial(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="date"
+                  placeholder="Data final"
+                  value={dataFinal}
+                  onChange={(e) => setDataFinal(e.target.value)}
+                  disabled={loading}
+                />
               </div>
             </div>
           </CardContent>
