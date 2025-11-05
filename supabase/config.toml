@@ -1,1 +1,4 @@
 project_id = "wkohhgehavsmtqyjtxcb"
+
+[functions.search-licitacoes]
+verify_jwt = false

@@ -39,9 +39,12 @@ serve(async (req) => {
     // Construir parâmetros da query
     const params = new URLSearchParams();
     
-    // Data inicial (últimos 30 dias)
-    const dataInicial = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const dataFinal = new Date().toISOString().split('T')[0];
+    // Data inicial (últimos 30 dias) - formato YYYYMMDD (sem hífens)
+    const dataInicialDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const dataFinalDate = new Date();
+    
+    const dataInicial = `${dataInicialDate.getFullYear()}${String(dataInicialDate.getMonth() + 1).padStart(2, '0')}${String(dataInicialDate.getDate()).padStart(2, '0')}`;
+    const dataFinal = `${dataFinalDate.getFullYear()}${String(dataFinalDate.getMonth() + 1).padStart(2, '0')}${String(dataFinalDate.getDate()).padStart(2, '0')}`;
     
     params.append('dataInicial', dataInicial);
     params.append('dataFinal', dataFinal);
