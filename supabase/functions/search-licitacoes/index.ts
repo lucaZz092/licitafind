@@ -22,6 +22,15 @@ interface Licitacao {
   objeto: string;
 }
 
+// Mapa de modalidades do PNCP
+const MODALIDADES_PNCP: { [key: string]: number } = {
+  'PREGAO': 6, // Pregão Eletrônico
+  'CONCORRENCIA': 4, // Concorrência Eletrônica
+  'DISPENSA': 8, // Dispensa de Licitação
+  'INEXIGIBILIDADE': 9,
+  'LEILAO': 1,
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -33,11 +42,7 @@ serve(async (req) => {
     console.log('Buscando licitações com:', { searchTerm, modalidade, valorMin });
 
     // API oficial do PNCP (Portal Nacional de Contratações Públicas)
-    // Endpoint: /v1/contratacoes/publicacao - Consultar por Data de Publicação
     const baseUrl = 'https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao';
-    
-    // Construir parâmetros da query
-    const params = new URLSearchParams();
     
     // Data inicial (últimos 30 dias) - formato YYYYMMDD (sem hífens)
     const dataInicialDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -46,68 +51,89 @@ serve(async (req) => {
     const dataInicial = `${dataInicialDate.getFullYear()}${String(dataInicialDate.getMonth() + 1).padStart(2, '0')}${String(dataInicialDate.getDate()).padStart(2, '0')}`;
     const dataFinal = `${dataFinalDate.getFullYear()}${String(dataFinalDate.getMonth() + 1).padStart(2, '0')}${String(dataFinalDate.getDate()).padStart(2, '0')}`;
     
-    params.append('dataInicial', dataInicial);
-    params.append('dataFinal', dataFinal);
-    params.append('pagina', '1');
-    params.append('tamanhoPagina', '100');
-
-    const url = `${baseUrl}?${params.toString()}`;
+    // Determinar quais modalidades buscar
+    const modalidadesBuscar: number[] = modalidade && MODALIDADES_PNCP[modalidade] 
+      ? [MODALIDADES_PNCP[modalidade]]
+      : [6, 4, 8]; // Pregão, Concorrência e Dispensa (mais comuns)
     
-    console.log('URL da API PNCP:', url);
+    console.log('Modalidades a buscar:', modalidadesBuscar);
+    console.log('Datas:', { dataInicial, dataFinal });
+    
+    let todasLicitacoes: Licitacao[] = [];
+    
+    // Buscar em cada modalidade
+    for (const codigoModalidade of modalidadesBuscar) {
+      const params = new URLSearchParams();
+      params.append('dataInicial', dataInicial);
+      params.append('dataFinal', dataFinal);
+      params.append('codigoModalidadeContratacao', codigoModalidade.toString());
+      params.append('pagina', '1');
+      params.append('tamanhoPagina', '100');
+      
+      const url = `${baseUrl}?${params.toString()}`;
+      console.log(`Buscando modalidade ${codigoModalidade}:`, url);
+      
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': '*/*',
+          },
+        });
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
+        console.log(`Modalidade ${codigoModalidade} - Status:`, response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Erro na modalidade ${codigoModalidade}:`, response.status, errorText.substring(0, 200));
+          continue; // Continua com a próxima modalidade
+        }
+
+        const data = await response.json();
+        console.log(`Modalidade ${codigoModalidade} - Resposta:`, JSON.stringify(data).substring(0, 200));
+
+        // Processar os dados
+        if (data && data.data && Array.isArray(data.data)) {
+          const licitacoes = data.data.map((item: any) => ({
+            id: item.numeroControlePNCP || item.numeroCompra || `${Math.random()}`,
+            titulo: (item.objetoCompra || 'Sem título').substring(0, 150),
+            orgao: item.orgaoEntidade?.razaoSocial || item.nomeOrgao || 'Órgão não informado',
+            modalidade: item.modalidadeNome || 'Não especificada',
+            valor_estimado: parseFloat(item.valorTotalEstimado || item.valorEstimadoTotal || 0),
+            data_abertura: item.dataPublicacaoPncp || item.dataAberturaPropostas || new Date().toISOString(),
+            situacao: item.situacaoCompraNome || 'EM ANDAMENTO',
+            objeto: item.objetoCompra || 'Descrição não disponível',
+          }));
+          
+          todasLicitacoes = [...todasLicitacoes, ...licitacoes];
+        }
+      } catch (fetchError) {
+        console.error(`Erro ao buscar modalidade ${codigoModalidade}:`, fetchError);
+      }
+    }
+    
+    console.log(`Total de licitacoes antes dos filtros: ${todasLicitacoes.length}`);
+    
+    // Aplicar filtros de busca
+    let licitacoesFiltradas = todasLicitacoes.filter((item) => {
+      // Filtrar por termo de busca
+      const matchesSearch = !searchTerm || 
+        item.objeto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filtrar por valor mínimo se especificado
+      const matchesValor = !valorMin || item.valor_estimado >= valorMin;
+      
+      return matchesSearch && matchesValor;
     });
-
-    if (!response.ok) {
-      console.error('Erro na API PNCP:', response.status, response.statusText);
-      throw new Error(`Erro ao buscar licitações: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('Resposta da API PNCP:', JSON.stringify(data).substring(0, 200));
-
-    // Processar os dados da API do PNCP
-    let licitacoes: Licitacao[] = [];
     
-    if (data && Array.isArray(data)) {
-      licitacoes = data
-        .filter((item: any) => {
-          // Filtrar por termo de busca no objeto da licitação
-          const objetoCompra = item.objetoCompra || '';
-          const matchesSearch = !searchTerm || 
-            objetoCompra.toLowerCase().includes(searchTerm.toLowerCase());
-          
-          // Filtrar por modalidade se especificado
-          const matchesModalidade = !modalidade || 
-            item.modalidadeCompra === modalidade;
-          
-          // Filtrar por valor mínimo se especificado
-          const matchesValor = !valorMin || 
-            (item.valorTotalEstimado && parseFloat(item.valorTotalEstimado) >= valorMin);
-          
-          return matchesSearch && matchesModalidade && matchesValor;
-        })
-        .map((item: any) => ({
-          id: item.numeroCompra || `${item.numeroControlePNCP || Math.random()}`,
-          titulo: (item.objetoCompra || 'Sem título').substring(0, 150),
-          orgao: item.orgaoEntidade?.razaoSocial || item.nomeOrgao || 'Órgão não informado',
-          modalidade: item.modalidadeNome || item.modalidadeCompra || 'Não especificada',
-          valor_estimado: parseFloat(item.valorTotalEstimado || item.valorEstimadoTotal || 0),
-          data_abertura: item.dataAberturaPropostas || item.dataInicioPropostas || new Date().toISOString(),
-          situacao: item.situacaoCompra || 'EM ANDAMENTO',
-          objeto: item.objetoCompra || 'Descrição não disponível',
-        }))
-        .slice(0, 50); // Limitar a 50 resultados
-    }
-
-    console.log(`${licitacoes.length} licitações encontradas`);
+    // Limitar a 50 resultados
+    licitacoesFiltradas = licitacoesFiltradas.slice(0, 50);
+    
+    console.log(`Total de licitações após filtros: ${licitacoesFiltradas.length}`);
 
     return new Response(
-      JSON.stringify({ licitacoes }),
+      JSON.stringify({ licitacoes: licitacoesFiltradas }),
       { 
         headers: { 
           ...corsHeaders, 
