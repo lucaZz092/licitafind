@@ -13,7 +13,7 @@ const Index = () => {
         <nav className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Search className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">LicitaBusca</span>
+            <span className="text-xl font-bold">Licita Find</span>
           </div>
           <Button onClick={() => navigate("/auth")} variant="outline">
             Entrar
@@ -52,7 +52,7 @@ const Index = () => {
         {/* Features */}
         <section className="container mx-auto px-4 py-20">
           <div className="text-center space-y-4 mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold">Por que escolher o LicitaBusca?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">Por que escolher o Licita Find?</h2>
             <p className="text-muted-foreground text-lg">
               Ferramentas poderosas para otimizar sua busca por licitações
             </p>
@@ -109,7 +109,7 @@ const Index = () => {
                 Acesso completo a licitações de todo o Brasil
               </h2>
               <p className="text-muted-foreground text-lg">
-                Com o LicitaBusca, você tem acesso a uma plataforma completa para 
+                Com o Licita Find, você tem acesso a uma plataforma completa para 
                 monitorar e buscar licitações públicas de forma eficiente e segura.
               </p>
               
@@ -187,10 +187,10 @@ const Index = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Search className="h-5 w-5 text-primary" />
-              <span className="font-semibold">LicitaBusca</span>
+              <span className="font-semibold">Licita Find</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2025 LicitaBusca. Todos os direitos reservados.
+              © 2025 Licita Find. Todos os direitos reservados.
             </p>
           </div>
         </div>

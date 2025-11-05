@@ -139,7 +139,7 @@ const Subscription = () => {
               Gerenciar Assinatura
             </CardTitle>
             <CardDescription>
-              Controle sua assinatura do LicitaBusca
+              Controle sua assinatura do Licita Find
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
