@@ -46,7 +46,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     checkUser();
-    checkSubscription();
+    // TEMPORARIAMENTE PAUSADO - Sistema de assinatura
+    // checkSubscription();
     checkAdminStatus();
   }, [navigate]);
 
@@ -72,6 +73,12 @@ const Dashboard = () => {
   };
 
   const checkSubscription = async () => {
+    // TEMPORARIAMENTE PAUSADO - Sistema de assinatura
+    setCheckingSubscription(false);
+    setIsSubscriber(true); // Todos os usuários têm acesso durante a pausa
+    return;
+    
+    /* CÓDIGO PAUSADO
     setCheckingSubscription(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -91,6 +98,7 @@ const Dashboard = () => {
     } finally {
       setCheckingSubscription(false);
     }
+    */
   };
 
   const checkAdminStatus = async () => {

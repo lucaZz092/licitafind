@@ -17,7 +17,8 @@ const Subscription = () => {
 
   useEffect(() => {
     checkUser();
-    checkSubscription();
+    // TEMPORARIAMENTE PAUSADO - Sistema de assinatura
+    // checkSubscription();
   }, []);
 
   const checkUser = async () => {
@@ -28,6 +29,12 @@ const Subscription = () => {
   };
 
   const checkSubscription = async () => {
+    // TEMPORARIAMENTE PAUSADO - Sistema de assinatura
+    setChecking(false);
+    setSubscribed(true); // Simula assinatura ativa durante a pausa
+    return;
+    
+    /* CÓDIGO PAUSADO
     setChecking(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -52,6 +59,7 @@ const Subscription = () => {
     } finally {
       setChecking(false);
     }
+    */
   };
 
   const handleCheckout = async () => {
