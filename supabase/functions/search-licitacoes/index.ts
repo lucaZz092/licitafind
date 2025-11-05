@@ -25,6 +25,7 @@ interface Licitacao {
   situacao: string;
   objeto: string;
   link_pncp?: string;
+  link_consulta?: string;
   cnpj?: string;
   ano_compra?: number;
   sequencial_compra?: number;
@@ -117,22 +118,22 @@ serve(async (req) => {
             const cnpj = item.orgaoEntidade?.cnpj || '';
             const anoCompra = item.anoCompra;
             const sequencialCompra = item.sequencialCompra;
-            const numeroCompra = item.numeroCompra;
+            const numeroControlePNCP = item.numeroControlePNCP;
             
-            // Construir múltiplas opções de link do PNCP
+            // Construir link direto do PNCP
+            // Formato oficial: https://pncp.gov.br/app/editais/{ano}/{cnpj}/{sequencial}
             let linkPncp = '';
+            let linkConsulta = '';
             
-            // Tenta formato principal
             if (cnpj && anoCompra && sequencialCompra) {
-              // Formato: https://pncp.gov.br/app/editais/{ano}/{cnpj}/{sequencial}
+              // Link direto para o edital
               linkPncp = `https://pncp.gov.br/app/editais/${anoCompra}/${cnpj}/${sequencialCompra}`;
-            } else if (numeroCompra && anoCompra) {
-              // Formato alternativo com número da compra
-              linkPncp = `https://pncp.gov.br/app/editais?q=${numeroCompra}`;
+              // Link alternativo de consulta detalhada
+              linkConsulta = `https://pncp.gov.br/api/consulta/v1/contratacoes/${anoCompra}/${cnpj}/${sequencialCompra}`;
             }
             
             return {
-              id: item.numeroControlePNCP || item.numeroCompra || `${Math.random()}`,
+              id: numeroControlePNCP || item.numeroCompra || `${Math.random()}`,
               titulo: (item.objetoCompra || 'Sem título').substring(0, 150),
               orgao: item.orgaoEntidade?.razaoSocial || item.nomeOrgao || 'Órgão não informado',
               modalidade: item.modalidadeNome || 'Não especificada',
@@ -141,6 +142,7 @@ serve(async (req) => {
               situacao: item.situacaoCompraNome || 'EM ANDAMENTO',
               objeto: item.objetoCompra || 'Descrição não disponível',
               link_pncp: linkPncp || undefined,
+              link_consulta: linkConsulta || undefined,
               cnpj: cnpj || undefined,
               ano_compra: anoCompra || undefined,
               sequencial_compra: sequencialCompra || undefined,

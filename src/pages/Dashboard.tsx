@@ -20,6 +20,7 @@ interface Licitacao {
   situacao: string;
   objeto: string;
   link_pncp?: string;
+  link_consulta?: string;
   cnpj?: string;
   ano_compra?: number;
   sequencial_compra?: number;
@@ -332,28 +333,41 @@ const Dashboard = () => {
                       <span>{formatDate(licitacao.data_abertura)}</span>
                     </div>
                   </div>
-                  <div className="pt-3 border-t flex gap-2">
-                    {licitacao.link_pncp && (
+                  <div className="pt-3 border-t">
+                    {licitacao.link_pncp ? (
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="default" 
+                          className="flex-1"
+                          onClick={() => window.open(licitacao.link_pncp, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Abrir Edital no PNCP
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            const searchUrl = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(licitacao.titulo)}`;
+                            window.open(searchUrl, '_blank');
+                          }}
+                          title="Buscar pelo título"
+                        >
+                          <Search className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
                       <Button 
                         variant="outline" 
-                        className="flex-1"
-                        onClick={() => window.open(licitacao.link_pncp, '_blank')}
+                        className="w-full"
+                        onClick={() => {
+                          const searchUrl = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(licitacao.orgao + ' ' + licitacao.titulo)}`;
+                          window.open(searchUrl, '_blank');
+                        }}
                       >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Ver no PNCP
+                        <Search className="h-4 w-4 mr-2" />
+                        Buscar no PNCP
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => {
-                        const searchUrl = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(licitacao.orgao)}`;
-                        window.open(searchUrl, '_blank');
-                      }}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Buscar órgão
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
