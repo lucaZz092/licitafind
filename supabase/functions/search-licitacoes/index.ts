@@ -82,77 +82,87 @@ serve(async (req) => {
     
     let todasLicitacoes: Licitacao[] = [];
     
-    // Buscar em cada modalidade
+    // Buscar em cada modalidade (múltiplas páginas)
+    const PAGINAS_POR_MODALIDADE = 5; // Buscar até 5 páginas de cada modalidade
+    
     for (const codigoModalidade of modalidadesBuscar) {
-      const params = new URLSearchParams();
-      params.append('dataInicial', dataInicial);
-      params.append('dataFinal', dataFinal);
-      params.append('codigoModalidadeContratacao', codigoModalidade.toString());
-      params.append('pagina', '1');
-      
-      const url = `${baseUrl}?${params.toString()}`;
-      console.log(`Buscando modalidade ${codigoModalidade}:`, url);
-      
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Accept': '*/*',
-          },
-        });
-
-        console.log(`Modalidade ${codigoModalidade} - Status:`, response.status);
+      for (let pagina = 1; pagina <= PAGINAS_POR_MODALIDADE; pagina++) {
+        const params = new URLSearchParams();
+        params.append('dataInicial', dataInicial);
+        params.append('dataFinal', dataFinal);
+        params.append('codigoModalidadeContratacao', codigoModalidade.toString());
+        params.append('pagina', pagina.toString());
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Erro na modalidade ${codigoModalidade}:`, response.status, errorText.substring(0, 200));
-          continue; // Continua com a próxima modalidade
-        }
+        const url = `${baseUrl}?${params.toString()}`;
+        console.log(`Buscando modalidade ${codigoModalidade}, página ${pagina}:`, url);
+        
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': '*/*',
+            },
+          });
 
-        const data = await response.json();
-        console.log(`Modalidade ${codigoModalidade} - Resposta:`, JSON.stringify(data).substring(0, 200));
+          console.log(`Modalidade ${codigoModalidade}, página ${pagina} - Status:`, response.status);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Erro na modalidade ${codigoModalidade}, página ${pagina}:`, response.status, errorText.substring(0, 200));
+            continue; // Continua com a próxima página
+          }
 
-        // Processar os dados
-        if (data && data.data && Array.isArray(data.data)) {
-          const licitacoes = data.data.map((item: any) => {
-            const cnpj = item.orgaoEntidade?.cnpj || '';
-            const anoCompra = item.anoCompra;
-            const sequencialCompra = item.sequencialCompra;
-            const numeroControlePNCP = item.numeroControlePNCP;
-            
-            // Construir link direto do PNCP
-            // Formato oficial: https://pncp.gov.br/app/editais/{ano}/{cnpj}/{sequencial}
-            let linkPncp = '';
-            let linkConsulta = '';
-            
-            if (cnpj && anoCompra && sequencialCompra) {
-              // Link direto para o edital
-              linkPncp = `https://pncp.gov.br/app/editais/${anoCompra}/${cnpj}/${sequencialCompra}`;
-              // Link alternativo de consulta detalhada
-              linkConsulta = `https://pncp.gov.br/api/consulta/v1/contratacoes/${anoCompra}/${cnpj}/${sequencialCompra}`;
+          const data = await response.json();
+          console.log(`Modalidade ${codigoModalidade}, página ${pagina} - Itens:`, data?.data?.length || 0);
+
+          // Processar os dados
+          if (data && data.data && Array.isArray(data.data)) {
+            // Se não retornou dados, parar de buscar mais páginas desta modalidade
+            if (data.data.length === 0) {
+              console.log(`Modalidade ${codigoModalidade} - Sem mais resultados na página ${pagina}`);
+              break;
             }
             
-            return {
-              id: numeroControlePNCP || item.numeroCompra || `${Math.random()}`,
-              titulo: (item.objetoCompra || 'Sem título').substring(0, 150),
-              orgao: item.orgaoEntidade?.razaoSocial || item.nomeOrgao || 'Órgão não informado',
-              modalidade: item.modalidadeNome || 'Não especificada',
-              valor_estimado: parseFloat(item.valorTotalEstimado || item.valorEstimadoTotal || 0),
-              data_abertura: item.dataPublicacaoPncp || item.dataAberturaPropostas || new Date().toISOString(),
-              situacao: item.situacaoCompraNome || 'EM ANDAMENTO',
-              objeto: item.objetoCompra || 'Descrição não disponível',
-              link_pncp: linkPncp || undefined,
-              link_consulta: linkConsulta || undefined,
-              cnpj: cnpj || undefined,
-              ano_compra: anoCompra || undefined,
-              sequencial_compra: sequencialCompra || undefined,
-            };
-          });
-          
-          todasLicitacoes = [...todasLicitacoes, ...licitacoes];
+            const licitacoes = data.data.map((item: any) => {
+              const cnpj = item.orgaoEntidade?.cnpj || '';
+              const anoCompra = item.anoCompra;
+              const sequencialCompra = item.sequencialCompra;
+              const numeroControlePNCP = item.numeroControlePNCP;
+              
+              // Construir link direto do PNCP
+              // Formato oficial: https://pncp.gov.br/app/editais/{ano}/{cnpj}/{sequencial}
+              let linkPncp = '';
+              let linkConsulta = '';
+              
+              if (cnpj && anoCompra && sequencialCompra) {
+                // Link direto para o edital
+                linkPncp = `https://pncp.gov.br/app/editais/${anoCompra}/${cnpj}/${sequencialCompra}`;
+                // Link alternativo de consulta detalhada
+                linkConsulta = `https://pncp.gov.br/api/consulta/v1/contratacoes/${anoCompra}/${cnpj}/${sequencialCompra}`;
+              }
+              
+              return {
+                id: numeroControlePNCP || item.numeroCompra || `${Math.random()}`,
+                titulo: (item.objetoCompra || 'Sem título').substring(0, 150),
+                orgao: item.orgaoEntidade?.razaoSocial || item.nomeOrgao || 'Órgão não informado',
+                modalidade: item.modalidadeNome || 'Não especificada',
+                valor_estimado: parseFloat(item.valorTotalEstimado || item.valorEstimadoTotal || 0),
+                data_abertura: item.dataPublicacaoPncp || item.dataAberturaPropostas || new Date().toISOString(),
+                situacao: item.situacaoCompraNome || 'EM ANDAMENTO',
+                objeto: item.objetoCompra || 'Descrição não disponível',
+                link_pncp: linkPncp || undefined,
+                link_consulta: linkConsulta || undefined,
+                cnpj: cnpj || undefined,
+                ano_compra: anoCompra || undefined,
+                sequencial_compra: sequencialCompra || undefined,
+              };
+            });
+            
+            todasLicitacoes = [...todasLicitacoes, ...licitacoes];
+          }
+        } catch (fetchError) {
+          console.error(`Erro ao buscar modalidade ${codigoModalidade}, página ${pagina}:`, fetchError);
         }
-      } catch (fetchError) {
-        console.error(`Erro ao buscar modalidade ${codigoModalidade}:`, fetchError);
       }
     }
     
@@ -189,8 +199,8 @@ serve(async (req) => {
       licitacoesFiltradas = licitacoesFiltradas.filter(item => item.valor_estimado <= valorMax);
     }
     
-    // Limitar a 50 resultados
-    licitacoesFiltradas = licitacoesFiltradas.slice(0, 50);
+    // Limitar a 200 resultados para melhor performance
+    licitacoesFiltradas = licitacoesFiltradas.slice(0, 200);
     
     console.log(`Total de licitações após filtros: ${licitacoesFiltradas.length}`);
 
