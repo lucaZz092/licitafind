@@ -60,16 +60,15 @@ const Dashboard = () => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, is_subscriber")
+      .select("full_name")
       .eq("id", session.user.id)
       .single();
 
     if (profile?.full_name) {
       setUserName(profile.full_name);
     }
-    if (profile?.is_subscriber !== undefined) {
-      setIsSubscriber(profile.is_subscriber);
-    }
+    // PAUSADO - Sistema de assinatura
+    setIsSubscriber(true);
   };
 
   const checkSubscription = async () => {
@@ -124,16 +123,7 @@ const Dashboard = () => {
   };
 
   const handleSearch = async () => {
-    if (!isSubscriber) {
-      toast({
-        title: "Assinatura necessária",
-        description: "Você precisa ser assinante para buscar licitações",
-        variant: "destructive",
-      });
-      navigate("/subscription");
-      return;
-    }
-
+    // PAUSADO - Verificação de assinatura removida temporariamente
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("search-licitacoes", {
@@ -224,17 +214,7 @@ const Dashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {!isSubscriber && !checkingSubscription && (
-          <Alert variant="destructive">
-            <Lock className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>Você precisa de uma assinatura ativa para buscar licitações.</span>
-              <Button variant="outline" size="sm" onClick={() => navigate("/subscription")}>
-                Assinar Agora
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* PAUSADO - Alerta de assinatura removido temporariamente */}
 
         <SavedFilters
           onLoadFilter={handleLoadFilter}
