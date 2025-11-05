@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.customer-portal]
 verify_jwt = false
+
+[functions.promote-to-admin]
+verify_jwt = false
+
+[functions.list-users]
+verify_jwt = false

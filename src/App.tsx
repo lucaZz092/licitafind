@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import LicitacaoDetalhes from "./pages/LicitacaoDetalhes";
 import Subscription from "./pages/Subscription";
 import Success from "./pages/Success";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/licitacao/:cnpj/:ano/:sequencial" element={<LicitacaoDetalhes />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/success" element={<Success />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2, FileText, CreditCard, Lock } from "lucide-react";
+import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2, FileText, CreditCard, Lock, Shield } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SavedFilters } from "@/components/SavedFilters";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -42,10 +42,12 @@ const Dashboard = () => {
   const [dataFinal, setDataFinal] = useState("");
   const [isSubscriber, setIsSubscriber] = useState(false);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     checkUser();
     checkSubscription();
+    checkAdminStatus();
   }, [navigate]);
 
   const checkUser = async () => {
@@ -88,6 +90,23 @@ const Dashboard = () => {
       console.error("Erro ao verificar assinatura:", error);
     } finally {
       setCheckingSubscription(false);
+    }
+  };
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin");
+
+      setIsAdmin(userRoles && userRoles.length > 0);
+    } catch (error) {
+      console.error("Error checking admin status:", error);
     }
   };
 
@@ -178,6 +197,12 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">Olá, {userName}</span>
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={() => navigate("/admin")}>
+                <Shield className="h-4 w-4 mr-2" />
+                Admin
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => navigate("/subscription")}>
               <CreditCard className="h-4 w-4 mr-2" />
               Assinatura
