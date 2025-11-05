@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft, ExternalLink, Calendar, DollarSign, Building2, FileText } from "lucide-react";
+import { ArrowLeft, ExternalLink, Calendar, DollarSign, Building2, FileText } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface DetalhesLicitacao {
@@ -16,56 +15,26 @@ interface DetalhesLicitacao {
   data_abertura: string;
   situacao: string;
   objeto: string;
-  cnpj: string;
-  ano_compra: number;
-  sequencial_compra: number;
-  numeroCompra?: string;
-  linkSistemaOrigem?: string;
-  dataPublicacaoPncp?: string;
-  dataAtualizacao?: string;
-  codigoModalidadeContratacao?: number;
-  objetoCompra?: string;
+  cnpj?: string;
+  ano_compra?: number;
+  sequencial_compra?: number;
 }
 
 const LicitacaoDetalhes = () => {
-  const { cnpj, ano, sequencial } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [detalhes, setDetalhes] = useState<DetalhesLicitacao | null>(null);
+  const detalhes = location.state as DetalhesLicitacao | null;
 
   useEffect(() => {
-    buscarDetalhes();
-  }, [cnpj, ano, sequencial]);
-
-  const buscarDetalhes = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("buscar-detalhes-licitacao", {
-        body: { cnpj, ano, sequencial },
-      });
-
-      if (error) throw error;
-
-      if (data?.detalhes) {
-        setDetalhes(data.detalhes);
-      } else {
-        toast({
-          title: "Detalhes não encontrados",
-          description: "Não foi possível carregar os detalhes desta licitação",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
+    if (!detalhes) {
       toast({
-        title: "Erro ao buscar detalhes",
-        description: error.message,
+        title: "Dados não disponíveis",
+        description: "Retorne à busca e selecione uma licitação",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [detalhes]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -84,25 +53,18 @@ const LicitacaoDetalhes = () => {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   if (!detalhes) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Licitação não encontrada</CardTitle>
+            <CardDescription>Retorne à busca e selecione uma licitação</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
+              Voltar para busca
             </Button>
           </CardContent>
         </Card>
@@ -174,20 +136,17 @@ const LicitacaoDetalhes = () => {
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">CNPJ do Órgão</p>
-                  <p className="font-mono text-sm">{detalhes.cnpj}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Número da Compra</p>
-                  <p className="font-medium">{detalhes.sequencial_compra}/{detalhes.ano_compra}</p>
-                </div>
-
-                {detalhes.dataPublicacaoPncp && (
+                {detalhes.cnpj && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Publicado no PNCP</p>
-                    <p className="font-medium">{formatDate(detalhes.dataPublicacaoPncp)}</p>
+                    <p className="text-sm text-muted-foreground mb-1">CNPJ do Órgão</p>
+                    <p className="font-mono text-sm">{detalhes.cnpj}</p>
+                  </div>
+                )}
+
+                {detalhes.sequencial_compra && detalhes.ano_compra && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Número da Compra</p>
+                    <p className="font-medium">{detalhes.sequencial_compra}/{detalhes.ano_compra}</p>
                   </div>
                 )}
               </div>

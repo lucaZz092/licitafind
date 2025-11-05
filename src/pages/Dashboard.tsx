@@ -351,10 +351,12 @@ const Dashboard = () => {
                       variant="default" 
                       className="w-full"
                       onClick={() => {
-                        if (licitacao.cnpj && licitacao.ano_compra && licitacao.sequencial_compra) {
-                          navigate(`/licitacao/${licitacao.cnpj}/${licitacao.ano_compra}/${licitacao.sequencial_compra}`);
-                        }
-                      }}
+                  if (licitacao.cnpj && licitacao.ano_compra && licitacao.sequencial_compra) {
+                    navigate(`/licitacao/${licitacao.cnpj}/${licitacao.ano_compra}/${licitacao.sequencial_compra}`, {
+                      state: licitacao
+                    });
+                  }
+                }}
                       disabled={!licitacao.cnpj || !licitacao.ano_compra || !licitacao.sequencial_compra}
                     >
                       <FileText className="h-4 w-4 mr-2" />
