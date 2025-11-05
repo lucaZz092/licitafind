@@ -117,11 +117,18 @@ serve(async (req) => {
             const cnpj = item.orgaoEntidade?.cnpj || '';
             const anoCompra = item.anoCompra;
             const sequencialCompra = item.sequencialCompra;
+            const numeroCompra = item.numeroCompra;
             
-            // Construir link do PNCP se temos os dados necessários
+            // Construir múltiplas opções de link do PNCP
             let linkPncp = '';
+            
+            // Tenta formato principal
             if (cnpj && anoCompra && sequencialCompra) {
+              // Formato: https://pncp.gov.br/app/editais/{ano}/{cnpj}/{sequencial}
               linkPncp = `https://pncp.gov.br/app/editais/${anoCompra}/${cnpj}/${sequencialCompra}`;
+            } else if (numeroCompra && anoCompra) {
+              // Formato alternativo com número da compra
+              linkPncp = `https://pncp.gov.br/app/editais?q=${numeroCompra}`;
             }
             
             return {

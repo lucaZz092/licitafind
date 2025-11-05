@@ -332,18 +332,29 @@ const Dashboard = () => {
                       <span>{formatDate(licitacao.data_abertura)}</span>
                     </div>
                   </div>
-                  {licitacao.link_pncp && (
-                    <div className="pt-3 border-t">
+                  <div className="pt-3 border-t flex gap-2">
+                    {licitacao.link_pncp && (
                       <Button 
                         variant="outline" 
-                        className="w-full"
+                        className="flex-1"
                         onClick={() => window.open(licitacao.link_pncp, '_blank')}
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
-                        Ver detalhes no PNCP
+                        Ver no PNCP
                       </Button>
-                    </div>
-                  )}
+                    )}
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => {
+                        const searchUrl = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(licitacao.orgao)}`;
+                        window.open(searchUrl, '_blank');
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Buscar órgão
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
