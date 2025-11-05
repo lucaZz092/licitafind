@@ -115,16 +115,23 @@ serve(async (req) => {
     
     // Aplicar filtros de busca
     let licitacoesFiltradas = todasLicitacoes.filter((item) => {
+      // Se não tem termo de busca, retorna tudo
+      if (!searchTerm) return true;
+      
       // Filtrar por termo de busca
-      const matchesSearch = !searchTerm || 
-        item.objeto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+      const termo = searchTerm.toLowerCase();
+      const matchesSearch = 
+        item.objeto.toLowerCase().includes(termo) ||
+        item.titulo.toLowerCase().includes(termo) ||
+        item.orgao.toLowerCase().includes(termo);
       
-      // Filtrar por valor mínimo se especificado
-      const matchesValor = !valorMin || item.valor_estimado >= valorMin;
-      
-      return matchesSearch && matchesValor;
+      return matchesSearch;
     });
+    
+    // Aplicar filtro de valor mínimo separadamente
+    if (valorMin && valorMin > 0) {
+      licitacoesFiltradas = licitacoesFiltradas.filter(item => item.valor_estimado >= valorMin);
+    }
     
     // Limitar a 50 resultados
     licitacoesFiltradas = licitacoesFiltradas.slice(0, 50);
