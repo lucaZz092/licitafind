@@ -68,7 +68,6 @@ serve(async (req) => {
       params.append('dataFinal', dataFinal);
       params.append('codigoModalidadeContratacao', codigoModalidade.toString());
       params.append('pagina', '1');
-      params.append('tamanhoPagina', '100');
       
       const url = `${baseUrl}?${params.toString()}`;
       console.log(`Buscando modalidade ${codigoModalidade}:`, url);
