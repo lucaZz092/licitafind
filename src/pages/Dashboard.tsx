@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2, FileText } from "lucide-react";
+import { Loader2, Search, LogOut, Filter, Calendar, DollarSign, Building2, FileText, CreditCard, Lock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SavedFilters } from "@/components/SavedFilters";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Licitacao {
   id: string;
@@ -39,9 +40,12 @@ const Dashboard = () => {
   const [valorMax, setValorMax] = useState("");
   const [dataInicial, setDataInicial] = useState("");
   const [dataFinal, setDataFinal] = useState("");
+  const [isSubscriber, setIsSubscriber] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
 
   useEffect(() => {
     checkUser();
+    checkSubscription();
   }, [navigate]);
 
   const checkUser = async () => {
@@ -53,12 +57,37 @@ const Dashboard = () => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, is_subscriber")
       .eq("id", session.user.id)
       .single();
 
     if (profile?.full_name) {
       setUserName(profile.full_name);
+    }
+    if (profile?.is_subscriber !== undefined) {
+      setIsSubscriber(profile.is_subscriber);
+    }
+  };
+
+  const checkSubscription = async () => {
+    setCheckingSubscription(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke("check-subscription", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      setIsSubscriber(data.subscribed);
+    } catch (error: any) {
+      console.error("Erro ao verificar assinatura:", error);
+    } finally {
+      setCheckingSubscription(false);
     }
   };
 
@@ -68,6 +97,16 @@ const Dashboard = () => {
   };
 
   const handleSearch = async () => {
+    if (!isSubscriber) {
+      toast({
+        title: "Assinatura necessária",
+        description: "Você precisa ser assinante para buscar licitações",
+        variant: "destructive",
+      });
+      navigate("/subscription");
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("search-licitacoes", {
@@ -139,6 +178,10 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">Olá, {userName}</span>
+            <Button variant="outline" size="sm" onClick={() => navigate("/subscription")}>
+              <CreditCard className="h-4 w-4 mr-2" />
+              Assinatura
+            </Button>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sair
@@ -148,7 +191,19 @@ const Dashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        <SavedFilters 
+        {!isSubscriber && !checkingSubscription && (
+          <Alert variant="destructive">
+            <Lock className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Você precisa de uma assinatura ativa para buscar licitações.</span>
+              <Button variant="outline" size="sm" onClick={() => navigate("/subscription")}>
+                Assinar Agora
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <SavedFilters
           onLoadFilter={handleLoadFilter}
           currentFilters={{
             searchTerm,
