@@ -31,35 +31,7 @@ const Subscription = () => {
   const checkSubscription = async () => {
     // TEMPORARIAMENTE PAUSADO - Sistema de assinatura
     setChecking(false);
-    setSubscribed(true); // Simula assinatura ativa durante a pausa
-    return;
-    
-    /* CÓDIGO PAUSADO
-    setChecking(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data, error } = await supabase.functions.invoke("check-subscription", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-
-      setSubscribed(data.subscribed);
-      setSubscriptionEnd(data.subscription_end);
-    } catch (error: any) {
-      toast({
-        title: "Erro ao verificar assinatura",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setChecking(false);
-    }
-    */
+    setSubscribed(true);
   };
 
   const handleCheckout = async () => {

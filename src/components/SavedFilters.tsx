@@ -44,7 +44,7 @@ export const SavedFilters = ({ onLoadFilter, currentFilters }: SavedFiltersProps
   }, []);
 
   const loadFilters = async () => {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("saved_filters")
       .select("*")
       .order("created_at", { ascending: false });
@@ -74,7 +74,7 @@ export const SavedFilters = ({ onLoadFilter, currentFilters }: SavedFiltersProps
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await (supabase as any).from("saved_filters").insert({
+    const { error } = await supabase.from("saved_filters").insert({
       user_id: user.id,
       name: filterName,
       search_term: currentFilters.searchTerm || null,
@@ -106,7 +106,7 @@ export const SavedFilters = ({ onLoadFilter, currentFilters }: SavedFiltersProps
   };
 
   const deleteFilter = async (id: string) => {
-    const { error } = await (supabase as any).from("saved_filters").delete().eq("id", id);
+    const { error } = await supabase.from("saved_filters").delete().eq("id", id);
 
     if (error) {
       toast({

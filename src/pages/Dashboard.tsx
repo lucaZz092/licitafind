@@ -74,30 +74,7 @@ const Dashboard = () => {
   const checkSubscription = async () => {
     // TEMPORARIAMENTE PAUSADO - Sistema de assinatura
     setCheckingSubscription(false);
-    setIsSubscriber(true); // Todos os usuários têm acesso durante a pausa
-    return;
-    
-    /* CÓDIGO PAUSADO
-    setCheckingSubscription(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data, error } = await supabase.functions.invoke("check-subscription", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-
-      setIsSubscriber(data.subscribed);
-    } catch (error: any) {
-      console.error("Erro ao verificar assinatura:", error);
-    } finally {
-      setCheckingSubscription(false);
-    }
-    */
+    setIsSubscriber(true);
   };
 
   const checkAdminStatus = async () => {
